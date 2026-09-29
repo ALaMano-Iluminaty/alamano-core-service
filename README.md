@@ -22,3 +22,12 @@ En Windows, desde PowerShell:
 ```
 
 El health check queda en `http://localhost:8082/actuator/health`.
+
+## HU9: estados del servicio
+
+Flujo permitido: `RESERVED` → `EN_ROUTE` → `ARRIVED` → `IN_PROGRESS` → `COMPLETED`. Desde `RESERVED` o `EN_ROUTE` también se puede pasar a `CANCELLED`.
+
+- `POST /api/services` — crea un servicio en `RESERVED` (provisional hasta HU10/reserva).
+- `PATCH /api/services/{id}/status` — cambia el estado; transición inválida → **409**.
+
+Cada cambio válido persiste en Postgres con `UPDATE` condicional y publica `service.status.changed` en el exchange `alamano.events` (mismo sobre que consume el Gateway).

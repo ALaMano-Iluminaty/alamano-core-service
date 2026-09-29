@@ -3,6 +3,20 @@ server:
 spring:
   application:
     name: core-service
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:alamano_core}
+    username: ${POSTGRES_USER:core}
+    password: ${POSTGRES_PASSWORD:core}
+  flyway:
+    enabled: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+alamano:
+  events:
+    exchange: alamano.events
 management:
   endpoints:
     web:
