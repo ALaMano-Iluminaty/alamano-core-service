@@ -31,3 +31,26 @@ Flujo permitido: `RESERVED` → `EN_ROUTE` → `ARRIVED` → `IN_PROGRESS` → `
 - `PATCH /api/services/{id}/status` — cambia el estado; transición inválida → **409**.
 
 Cada cambio válido persiste en Postgres con `UPDATE` condicional y publica `service.status.changed` en el exchange `alamano.events` (mismo sobre que consume el Gateway).
+
+## Seguridad
+
+Los endpoints requieren `Authorization: Bearer <jwt>`, excepto `/actuator/health` y sus rutas hijas. El Core valida localmente la firma RS256 usando la llave pública compartida con Auth y el Realtime Gateway; no llama al servicio Auth. Por defecto lee `classpath:keys/public.pem`. Se puede cambiar la ubicación con la variable `JWT_PUBLIC_KEY_LOCATION`.
+
+## HU2: vendedores cercanos
+
+`GET /api/professionals/nearby?lat=4.6486&lng=-74.0628&radiusKm=5` devuelve profesionales disponibles dentro del radio, ordenados por distancia. `lat` y `lng` son obligatorios; `radiusKm` es opcional, con valor por defecto de 5 km y máximo de 20 km. La respuesta incluye el identificador, ubicación y distancia en kilómetros redondeada a dos decimales. La lista queda vacía (`[]`) si no hay profesionales disponibles en el área.
+
+Ejemplo de respuesta:
+
+```json
+[
+  {
+    "professionalId": "pro-123",
+    "latitude": 4.6576,
+    "longitude": -74.0628,
+    "distanceKm": 1.0
+  }
+]
+```
+
+Estados de un profesional: `OFFLINE` (desconectado), `AVAILABLE` (conectado y libre; aparece en el mapa) y `BUSY` (con servicio reservado o en curso; no aparece en el mapa).

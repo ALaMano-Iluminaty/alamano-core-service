@@ -17,6 +17,8 @@ spring:
 alamano:
   events:
     exchange: alamano.events
+  security:
+    jwt-public-key: ${JWT_PUBLIC_KEY_LOCATION:classpath:keys/public.pem}
 management:
   endpoints:
     web:

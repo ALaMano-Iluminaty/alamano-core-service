@@ -2,6 +2,7 @@ package com.alamano.core.infrastructure.adapter.in.rest;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -24,6 +25,7 @@ class ServiceStatusControllerTest {
     @Test
     void invalidTransitionReturns409() throws Exception {
         MvcResult created = mockMvc.perform(post("/api/services")
+                        .with(jwt().jwt(token -> token.subject("client-1").claim("role", "CLIENT")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"professionalId":"pro-1","clientId":"cli-1"}
@@ -35,6 +37,7 @@ class ServiceStatusControllerTest {
         String serviceId = body.replaceAll(".*\"id\"\\s*:\\s*\"([^\"]+)\".*", "$1");
 
         mockMvc.perform(patch("/api/services/" + serviceId + "/status")
+                        .with(jwt().jwt(token -> token.subject("client-1").claim("role", "CLIENT")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"status":"COMPLETED"}
@@ -46,6 +49,7 @@ class ServiceStatusControllerTest {
     @Test
     void validTransitionUpdatesStatus() throws Exception {
         MvcResult created = mockMvc.perform(post("/api/services")
+                        .with(jwt().jwt(token -> token.subject("client-2").claim("role", "CLIENT")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"professionalId":"pro-2","clientId":"cli-2"}
@@ -57,6 +61,7 @@ class ServiceStatusControllerTest {
         String serviceId = created.getResponse().getContentAsString().replaceAll(".*\"id\"\\s*:\\s*\"([^\"]+)\".*", "$1");
 
         mockMvc.perform(patch("/api/services/" + serviceId + "/status")
+                        .with(jwt().jwt(token -> token.subject("client-2").claim("role", "CLIENT")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"status":"EN_ROUTE"}
