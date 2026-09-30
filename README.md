@@ -54,3 +54,44 @@ Ejemplo de respuesta:
 ```
 
 Estados de un profesional: `OFFLINE` (desconectado), `AVAILABLE` (conectado y libre; aparece en el mapa) y `BUSY` (con servicio reservado o en curso; no aparece en el mapa).
+
+## HU4: conectarme
+
+`POST /api/professionals/me/online` marca al vendedor como disponible (`AVAILABLE`) en la posición enviada, para que aparezca en la búsqueda de vendedores cercanos.
+
+- **Rol:** solo `PROFESSIONAL`. El id del vendedor sale del `sub` del token; nunca se envía en el cuerpo.
+- **Header opcional:** `X-Correlation-Id`. Si no llega, el Core genera uno.
+- **Cuerpo:**
+
+```json
+{ "latitude": 4.6486, "longitude": -74.0628 }
+```
+
+La primera conexión crea al vendedor. Conectarse estando ya disponible es válido (por ejemplo, al recargar la página) y solo actualiza la posición.
+
+| Respuesta | Cuándo |
+|---|---|
+| **200** | Quedó disponible. Devuelve `professionalId`, `status`, `latitude`, `longitude` y `version`. |
+| **400** | Falta `latitude` o `longitude` (`invalid_request`) o están fuera de rango (`invalid_search_area`). |
+| **401** | Sin token o con un token inválido. |
+| **403** | El token no tiene rol `PROFESSIONAL`. |
+| **409** | El vendedor tiene un servicio en curso (`professional_busy`) o fue modificado al mismo tiempo dos veces seguidas (`concurrent_update`). |
+
+Después de guardar, el Core publica `professional.online` en el exchange `alamano.events` (routing key `professional.online`), que el Realtime Gateway reenvía a `/topic/map`:
+
+```json
+{
+  "eventId": "7d0f2c1e-...",
+  "type": "professional.online",
+  "schemaVersion": 1,
+  "occurredAt": "2026-09-30T12:00:00Z",
+  "correlationId": "c0ffee-...",
+  "payload": {
+    "professionalId": "pro-1",
+    "latitude": 4.6486,
+    "longitude": -74.0628,
+    "status": "AVAILABLE",
+    "version": 0
+  }
+}
+```

@@ -4,8 +4,12 @@ import com.alamano.core.domain.service.InvalidServiceStatusTransitionException;
 import com.alamano.core.domain.service.ServiceNotFoundException;
 import com.alamano.core.domain.service.ServiceStatusConflictException;
 import com.alamano.core.domain.professional.InvalidSearchAreaException;
+import com.alamano.core.domain.professional.ProfessionalBusyException;
+import com.alamano.core.domain.professional.ProfessionalConcurrentUpdateException;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -49,5 +53,26 @@ public class RestExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     Map<String, Object> invalidRequest(Exception ex) {
         return Map.of("error", "invalid_request", "message", ex.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    Map<String, Object> invalidBody(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        return Map.of("error", "invalid_request", "message", message);
+    }
+
+    @ExceptionHandler(ProfessionalBusyException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    Map<String, Object> professionalBusy(ProfessionalBusyException ex) {
+        return Map.of("error", "professional_busy", "message", ex.getMessage());
+    }
+
+    @ExceptionHandler(ProfessionalConcurrentUpdateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    Map<String, Object> professionalConcurrentUpdate(ProfessionalConcurrentUpdateException ex) {
+        return Map.of("error", "concurrent_update", "message", ex.getMessage());
     }
 }
