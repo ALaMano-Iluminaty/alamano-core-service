@@ -29,4 +29,18 @@ public record Professional(
         }
         return new Professional(id, ProfessionalStatus.AVAILABLE, location, now, version + 1);
     }
+
+    public Professional goOffline(Instant now) {
+        if (status == ProfessionalStatus.BUSY) {
+            throw new ProfessionalBusyException(id);
+        }
+        if (status == ProfessionalStatus.OFFLINE) {
+            throw new IllegalStateException("El vendedor ya está desconectado.");
+        }
+        return new Professional(id, ProfessionalStatus.OFFLINE, location, locationUpdatedAt, version + 1);
+    }
+
+    public boolean wentOnlineAfter(Instant instant) {
+        return locationUpdatedAt != null && locationUpdatedAt.isAfter(instant);
+    }
 }
