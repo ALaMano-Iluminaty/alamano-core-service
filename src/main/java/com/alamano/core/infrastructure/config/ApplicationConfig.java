@@ -2,6 +2,7 @@ package com.alamano.core.infrastructure.config;
 
 import com.alamano.core.application.port.in.ChangeServiceStatusUseCase;
 import com.alamano.core.application.port.in.ConnectProfessionalUseCase;
+import com.alamano.core.application.port.in.DisconnectProfessionalUseCase;
 import com.alamano.core.application.port.in.CreateServiceUseCase;
 import com.alamano.core.application.port.in.FindNearbyProfessionalsUseCase;
 import com.alamano.core.application.port.out.ProfessionalEventPublisherPort;
@@ -11,6 +12,7 @@ import com.alamano.core.application.port.out.ServiceRepositoryPort;
 import com.alamano.core.application.port.out.ServiceStatusChangedPublisherPort;
 import com.alamano.core.application.service.ChangeServiceStatusService;
 import com.alamano.core.application.service.ConnectProfessionalService;
+import com.alamano.core.application.service.DisconnectProfessionalService;
 import com.alamano.core.application.service.CreateServiceService;
 import com.alamano.core.application.service.FindNearbyProfessionalsService;
 import java.time.Clock;
@@ -48,5 +50,13 @@ public class ApplicationConfig {
             ProfessionalEventPublisherPort publisher,
             Clock clock) {
         return new ConnectProfessionalService(repository, publisher, clock);
+    }
+
+    @Bean
+    DisconnectProfessionalUseCase disconnectProfessionalUseCase(
+            ProfessionalRepositoryPort repository,
+            ProfessionalEventPublisherPort publisher,
+            Clock clock) {
+        return new DisconnectProfessionalService(repository, publisher, clock);
     }
 }
