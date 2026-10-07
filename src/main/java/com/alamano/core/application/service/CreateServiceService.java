@@ -17,7 +17,14 @@ public class CreateServiceService implements CreateServiceUseCase {
 
     @Override
     public Service createReserved(String professionalId, String clientId) {
-        Service service = Service.createReserved(UUID.randomUUID(), professionalId, clientId, clock.instant());
+        return createReserved(professionalId, clientId, null, null);
+    }
+
+    @Override
+    public Service createReserved(String professionalId, String clientId, Double destinationLatitude,
+            Double destinationLongitude) {
+        Service service = Service.createReserved(UUID.randomUUID(), professionalId, clientId, clock.instant(),
+                destinationLatitude, destinationLongitude);
         return repository.save(service);
     }
 }

@@ -10,18 +10,33 @@ public record Service(
         ServiceStatus status,
         long version,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        Double destinationLatitude,
+        Double destinationLongitude) {
+
+    public Service(UUID id, String professionalId, String clientId, ServiceStatus status,
+            long version, Instant createdAt, Instant updatedAt) {
+        this(id, professionalId, clientId, status, version, createdAt, updatedAt, null, null);
+    }
 
     public static Service createReserved(UUID id, String professionalId, String clientId, Instant now) {
-        return new Service(id, professionalId, clientId, ServiceStatus.RESERVED, 0, now, now);
+        return createReserved(id, professionalId, clientId, now, null, null);
+    }
+
+    public static Service createReserved(UUID id, String professionalId, String clientId, Instant now,
+            Double destinationLatitude, Double destinationLongitude) {
+        return new Service(id, professionalId, clientId, ServiceStatus.RESERVED, 0, now, now,
+                destinationLatitude, destinationLongitude);
     }
 
     public Service transitionTo(ServiceStatus target) {
         ServiceStatus next = ServiceStateMachine.transition(status, target);
-        return new Service(id, professionalId, clientId, next, version + 1, createdAt, updatedAt);
+        return new Service(id, professionalId, clientId, next, version + 1, createdAt, updatedAt,
+                destinationLatitude, destinationLongitude);
     }
 
     public Service withUpdatedAt(Instant updatedAt) {
-        return new Service(id, professionalId, clientId, status, version, createdAt, updatedAt);
+        return new Service(id, professionalId, clientId, status, version, createdAt, updatedAt,
+                destinationLatitude, destinationLongitude);
     }
 }

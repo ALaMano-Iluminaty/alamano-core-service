@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Profile;
 @Profile("!test")
 public class RabbitListenerConfig {
     public static final String PROFESSIONAL_CONNECTION_QUEUE = "core.professional-connection";
+    public static final String LOCATION_UPDATES_QUEUE = "core.location-updates";
     public static final String DEAD_LETTER_EXCHANGE = "alamano.events.dlx";
 
     @Bean
@@ -25,9 +26,22 @@ public class RabbitListenerConfig {
     }
 
     @Bean
+    Queue locationUpdatesQueue() {
+        return QueueBuilder.durable(LOCATION_UPDATES_QUEUE)
+                .deadLetterExchange(DEAD_LETTER_EXCHANGE)
+                .deadLetterRoutingKey("core.dlq")
+                .build();
+    }
+
+    @Bean
     Binding professionalConnectionLostBinding(Queue professionalConnectionQueue, TopicExchange eventsExchange) {
         return BindingBuilder.bind(professionalConnectionQueue)
                 .to(eventsExchange)
                 .with("professional.connection.lost");
+    }
+
+    @Bean
+    Binding locationUpdatedBinding(Queue locationUpdatesQueue, TopicExchange eventsExchange) {
+        return BindingBuilder.bind(locationUpdatesQueue).to(eventsExchange).with("location.updated");
     }
 }

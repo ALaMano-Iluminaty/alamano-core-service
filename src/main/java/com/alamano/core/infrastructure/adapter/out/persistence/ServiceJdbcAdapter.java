@@ -1,6 +1,7 @@
 package com.alamano.core.infrastructure.adapter.out.persistence;
 
 import com.alamano.core.application.port.out.ServiceRepositoryPort;
+import com.alamano.core.application.port.out.TrackingRepositoryPort;
 import com.alamano.core.domain.service.Service;
 import com.alamano.core.domain.service.ServiceStatus;
 import java.sql.ResultSet;
@@ -14,7 +15,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ServiceJdbcAdapter implements ServiceRepositoryPort {
+public class ServiceJdbcAdapter implements ServiceRepositoryPort, TrackingRepositoryPort {
     private static final RowMapper<Service> ROW_MAPPER = ServiceJdbcAdapter::mapRow;
     private final JdbcTemplate jdbc;
 
@@ -26,8 +27,9 @@ public class ServiceJdbcAdapter implements ServiceRepositoryPort {
     public Service save(Service service) {
         jdbc.update(
                 """
-                INSERT INTO services (id, professional_id, client_id, status, version, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO services (id, professional_id, client_id, status, version, created_at, updated_at,
+                    destination_latitude, destination_longitude)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 service.id(),
                 service.professionalId(),
@@ -35,7 +37,9 @@ public class ServiceJdbcAdapter implements ServiceRepositoryPort {
                 service.status().name(),
                 service.version(),
                 Timestamp.from(service.createdAt()),
-                Timestamp.from(service.updatedAt()));
+                Timestamp.from(service.updatedAt()),
+                service.destinationLatitude(),
+                service.destinationLongitude());
         return service;
     }
 
@@ -43,7 +47,8 @@ public class ServiceJdbcAdapter implements ServiceRepositoryPort {
     public Optional<Service> findById(UUID serviceId) {
         return jdbc.query(
                         """
-                        SELECT id, professional_id, client_id, status, version, created_at, updated_at
+                        SELECT id, professional_id, client_id, status, version, created_at, updated_at,
+                            destination_latitude, destination_longitude
                         FROM services WHERE id = ?
                         """,
                         ROW_MAPPER,
@@ -70,6 +75,20 @@ public class ServiceJdbcAdapter implements ServiceRepositoryPort {
         return rows == 1;
     }
 
+    @Override
+    public boolean saveLastLocationIfNewer(String serviceId, com.alamano.core.domain.professional.GeoPoint location,
+            Instant recordedAt) {
+        int rows = jdbc.update(
+                """
+                UPDATE services
+                SET last_latitude = ?, last_longitude = ?, last_tracked_at = ?
+                WHERE id = ? AND (last_tracked_at IS NULL OR last_tracked_at < ?)
+                """,
+                location.latitude(), location.longitude(), Timestamp.from(recordedAt), UUID.fromString(serviceId),
+                Timestamp.from(recordedAt));
+        return rows == 1;
+    }
+
     private static Service mapRow(ResultSet rs, int rowNum) throws SQLException {
         return new Service(
                 rs.getObject("id", UUID.class),
@@ -78,6 +97,8 @@ public class ServiceJdbcAdapter implements ServiceRepositoryPort {
                 ServiceStatus.valueOf(rs.getString("status")),
                 rs.getLong("version"),
                 rs.getTimestamp("created_at").toInstant(),
-                rs.getTimestamp("updated_at").toInstant());
+                rs.getTimestamp("updated_at").toInstant(),
+                (Double) rs.getObject("destination_latitude"),
+                (Double) rs.getObject("destination_longitude"));
     }
 }

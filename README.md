@@ -96,6 +96,37 @@ Después de guardar, el Core publica `professional.online` en el exchange `alama
 }
 ```
 
+## HU6: ETA y tracking
+
+El Gateway publica `location.updated` cada vez que recibe una nueva ubicación del vendedor. El Core valida el evento y que el vendedor corresponda al servicio, persiste la ubicación solo si su `recordedAt` es más reciente y después publica `tracking.updated`. La cola durable `core.location-updates` usa `alamano.events.dlx` y la routing key `core.dlq` para eventos rechazados.
+
+| Evento | Emisor | Payload |
+|---|---|---|
+| `location.updated` | Realtime Gateway | `professionalId`, `serviceId`, `latitude`, `longitude`, `recordedAt` |
+| `tracking.updated` | Core | `serviceId`, `professionalId`, `latitude`, `longitude`, `etaSeconds`, `recordedAt` |
+
+El ETA usa la distancia Haversine entre la ubicación recibida y el destino del servicio. Para servicios `RESERVED` o `EN_ROUTE`, se estima el tiempo con la velocidad media configurable `alamano.tracking.average-speed-kmh` (25 km/h por defecto) y se redondea hacia arriba a segundos. En `ARRIVED` o `IN_PROGRESS` el ETA es cero; si no hay destino, es `null`.
+
+Al crear un servicio, `POST /api/services` acepta opcionalmente `destinationLatitude` y `destinationLongitude`; deben enviarse juntas. Si se omiten, la ubicación se sigue guardando y `etaSeconds` queda en `null`. La persistencia compara `last_tracked_at` en el propio `UPDATE`, por lo que una ubicación atrasada no pisa la más nueva.
+
+```json
+{
+  "eventId": "uuid-nuevo",
+  "type": "tracking.updated",
+  "schemaVersion": 1,
+  "occurredAt": "2026-10-07T21:30:00Z",
+  "correlationId": "uuid-de-correlacion",
+  "payload": {
+    "serviceId": "00000000-0000-0000-0000-000000000337",
+    "professionalId": "pro-1",
+    "latitude": 4.65,
+    "longitude": -74.06,
+    "etaSeconds": 720,
+    "recordedAt": "2026-10-07T21:29:58Z"
+  }
+}
+```
+
 ## HU5: desconectarme
 
 `POST /api/professionals/me/offline` marca al vendedor como `OFFLINE` para que deje de aparecer en `GET /api/professionals/nearby`. El endpoint no recibe cuerpo; el identificador se toma del `sub` del token. Acepta el header opcional `X-Correlation-Id`.

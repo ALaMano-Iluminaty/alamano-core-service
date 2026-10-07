@@ -37,7 +37,8 @@ public class ServiceController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ServiceResponse create(@Valid @RequestBody CreateServiceRequest request) {
-        Service service = createServiceUseCase.createReserved(request.professionalId(), request.clientId());
+        Service service = createServiceUseCase.createReserved(request.professionalId(), request.clientId(),
+                request.destinationLatitude(), request.destinationLongitude());
         return ServiceResponse.from(service, allowedTransitions(service.status()));
     }
 
