@@ -76,7 +76,7 @@ class ServiceStatusControllerTest {
         String serviceId = body.replaceAll(".*\"id\"\\s*:\\s*\"([^\"]+)\".*", "$1");
 
         mockMvc.perform(patch("/api/services/" + serviceId + "/status")
-                        .with(jwt().jwt(token -> token.subject("client-1").claim("role", "CLIENT")))
+                        .with(jwt().jwt(token -> token.subject("pro-1").claim("role", "PROFESSIONAL")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"status":"COMPLETED"}
@@ -100,7 +100,7 @@ class ServiceStatusControllerTest {
         String serviceId = created.getResponse().getContentAsString().replaceAll(".*\"id\"\\s*:\\s*\"([^\"]+)\".*", "$1");
 
         mockMvc.perform(patch("/api/services/" + serviceId + "/status")
-                        .with(jwt().jwt(token -> token.subject("client-2").claim("role", "CLIENT")))
+                        .with(jwt().jwt(token -> token.subject("pro-2").claim("role", "PROFESSIONAL")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"status":"EN_ROUTE"}
@@ -109,5 +109,41 @@ class ServiceStatusControllerTest {
                 .andExpect(jsonPath("$.status").value("EN_ROUTE"))
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.allowedTransitions").isArray());
+    }
+
+    @Test
+    void thirdPartyCannotChangeStatus() throws Exception {
+        String serviceId = createService("pro-3", "cli-3");
+        mockMvc.perform(patch("/api/services/" + serviceId + "/status")
+                        .with(jwt().jwt(token -> token.subject("other").claim("role", "CLIENT")))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"EN_ROUTE\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("service_access_denied"))
+                .andExpect(jsonPath("$.message").value("No puedes cambiar el estado de este servicio"));
+    }
+
+    @Test
+    void clientCanCancelButCannotAdvanceService() throws Exception {
+        String cancellable = createService("pro-4", "cli-4");
+        mockMvc.perform(patch("/api/services/" + cancellable + "/status")
+                        .with(jwt().jwt(token -> token.subject("cli-4").claim("role", "CLIENT")))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"CANCELLED\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        String notCancellable = createService("pro-5", "cli-5");
+        mockMvc.perform(patch("/api/services/" + notCancellable + "/status")
+                        .with(jwt().jwt(token -> token.subject("cli-5").claim("role", "CLIENT")))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"ARRIVED\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("service_access_denied"));
+    }
+
+    private String createService(String professionalId, String clientId) throws Exception {
+        MvcResult created = mockMvc.perform(post("/api/services")
+                        .with(jwt().jwt(token -> token.subject(clientId).claim("role", "CLIENT")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"professionalId\":\"" + professionalId + "\",\"clientId\":\"" + clientId + "\"}"))
+                .andExpect(status().isCreated()).andReturn();
+        return created.getResponse().getContentAsString().replaceAll(".*\\\"id\\\"\\s*:\\s*\\\"([^\\\"]+)\\\".*", "$1");
     }
 }

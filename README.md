@@ -32,6 +32,18 @@ Flujo permitido: `RESERVED` → `EN_ROUTE` → `ARRIVED` → `IN_PROGRESS` → `
 
 Cada cambio válido persiste en Postgres con `UPDATE` condicional y publica `service.status.changed` en el exchange `alamano.events` (mismo sobre que consume el Gateway).
 
+Al crear un servicio, `POST /api/services` guarda primero y publica `service.status.changed` con `previousStatus: null`, `status: "RESERVED"` y `version: 0`.
+
+Permisos para `PATCH /api/services/{id}/status` (el usuario se identifica por el `sub` del JWT):
+
+| Quién | Permiso |
+|---|---|
+| Vendedor (`sub = professionalId`) | Cualquier transición válida |
+| Cliente (`sub = clientId`) | Solo cancelar (`CANCELLED`) desde `RESERVED` o `EN_ROUTE` |
+| Otro usuario | Sin permiso: **403** (`service_access_denied`) |
+
+Una transición inválida devuelve **409** (`invalid_transition`); un conflicto de escritura concurrente también devuelve **409** (`status_conflict`).
+
 ## Seguridad
 
 Los endpoints requieren `Authorization: Bearer <jwt>`, excepto `/actuator/health` y sus rutas hijas. El Core valida localmente la firma RS256 usando la llave pública compartida con Auth y el Realtime Gateway; no llama al servicio Auth. Por defecto lee `classpath:keys/public.pem`. Se puede cambiar la ubicación con la variable `JWT_PUBLIC_KEY_LOCATION`.
