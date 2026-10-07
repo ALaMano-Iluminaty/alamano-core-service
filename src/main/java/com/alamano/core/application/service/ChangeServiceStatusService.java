@@ -5,6 +5,7 @@ import com.alamano.core.application.port.out.ServiceRepositoryPort;
 import com.alamano.core.application.port.out.ServiceStatusChangedPublisherPort;
 import com.alamano.core.domain.service.Service;
 import com.alamano.core.domain.service.ServiceNotFoundException;
+import com.alamano.core.domain.service.ServiceAccessDeniedException;
 import com.alamano.core.domain.service.ServiceStatus;
 import com.alamano.core.domain.service.ServiceStatusConflictException;
 import java.time.Clock;
@@ -26,8 +27,13 @@ public class ChangeServiceStatusService implements ChangeServiceStatusUseCase {
     }
 
     @Override
-    public Service changeStatus(UUID serviceId, ServiceStatus targetStatus, String correlationId) {
+    public Service changeStatus(UUID serviceId, ServiceStatus targetStatus, String userId, String correlationId) {
         Service current = repository.findById(serviceId).orElseThrow(() -> new ServiceNotFoundException(serviceId));
+        boolean professional = current.professionalId().equals(userId);
+        boolean clientCancellation = current.clientId().equals(userId) && targetStatus == ServiceStatus.CANCELLED;
+        if (!professional && !clientCancellation) {
+            throw new ServiceAccessDeniedException();
+        }
         ServiceStatus previousStatus = current.status();
         Service transitioned = current.transitionTo(targetStatus);
         Instant now = clock.instant();

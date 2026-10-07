@@ -2,6 +2,7 @@ package com.alamano.core.infrastructure.adapter.in.rest;
 
 import com.alamano.core.domain.service.InvalidServiceStatusTransitionException;
 import com.alamano.core.domain.service.ServiceNotFoundException;
+import com.alamano.core.domain.service.ServiceAccessDeniedException;
 import com.alamano.core.domain.service.ServiceStatusConflictException;
 import com.alamano.core.domain.professional.InvalidSearchAreaException;
 import com.alamano.core.domain.professional.ProfessionalBusyException;
@@ -19,6 +20,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class RestExceptionHandler {
+    @ExceptionHandler(ServiceAccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    Map<String, Object> accessDenied(ServiceAccessDeniedException ex) {
+        return Map.of("error", "service_access_denied", "message", ex.getMessage());
+    }
+
     @ExceptionHandler(InvalidServiceStatusTransitionException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     Map<String, Object> invalidTransition(InvalidServiceStatusTransitionException ex) {

@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @RestController
 @RequestMapping("/api/services")
@@ -46,8 +48,9 @@ public class ServiceController {
     public ServiceResponse changeStatus(
             @PathVariable UUID serviceId,
             @Valid @RequestBody ChangeServiceStatusRequest request,
-            @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId) {
-        Service service = changeServiceStatusUseCase.changeStatus(serviceId, request.status(), correlationId);
+            @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId,
+            @AuthenticationPrincipal Jwt jwt) {
+        Service service = changeServiceStatusUseCase.changeStatus(serviceId, request.status(), jwt.getSubject(), correlationId);
         return ServiceResponse.from(service, allowedTransitions(service.status()));
     }
 
