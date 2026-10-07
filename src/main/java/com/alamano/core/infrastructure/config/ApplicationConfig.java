@@ -41,8 +41,9 @@ public class ApplicationConfig {
     }
 
     @Bean
-    CreateServiceUseCase createServiceUseCase(ServiceRepositoryPort repository, Clock clock) {
-        return new CreateServiceService(repository, clock);
+    CreateServiceUseCase createServiceUseCase(
+            ServiceRepositoryPort repository, ServiceStatusChangedPublisherPort publisher, Clock clock) {
+        return new CreateServiceService(repository, publisher, clock);
     }
 
     @Bean
