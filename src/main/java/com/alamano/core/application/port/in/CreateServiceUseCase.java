@@ -4,4 +4,7 @@ import com.alamano.core.domain.service.Service;
 
 public interface CreateServiceUseCase {
     Service createReserved(String professionalId, String clientId);
+
+    Service createReserved(String professionalId, String clientId, Double destinationLatitude,
+            Double destinationLongitude);
 }
