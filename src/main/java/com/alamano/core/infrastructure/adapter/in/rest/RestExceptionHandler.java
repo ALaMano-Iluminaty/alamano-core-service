@@ -6,6 +6,7 @@ import com.alamano.core.domain.service.ServiceStatusConflictException;
 import com.alamano.core.domain.professional.InvalidSearchAreaException;
 import com.alamano.core.domain.professional.ProfessionalBusyException;
 import com.alamano.core.domain.professional.ProfessionalConcurrentUpdateException;
+import com.alamano.core.domain.professional.ProfessionalNotFoundException;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
@@ -74,5 +75,11 @@ public class RestExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     Map<String, Object> professionalConcurrentUpdate(ProfessionalConcurrentUpdateException ex) {
         return Map.of("error", "concurrent_update", "message", ex.getMessage());
+    }
+
+    @ExceptionHandler(ProfessionalNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    Map<String, Object> professionalNotFound(ProfessionalNotFoundException ex) {
+        return Map.of("error", "professional_not_found", "message", ex.getMessage());
     }
 }

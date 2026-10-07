@@ -1,6 +1,7 @@
 package com.alamano.core.infrastructure.adapter.in.rest;
 
 import com.alamano.core.application.port.in.ConnectProfessionalUseCase;
+import com.alamano.core.application.port.in.DisconnectProfessionalUseCase;
 import com.alamano.core.application.port.in.FindNearbyProfessionalsUseCase;
 import com.alamano.core.domain.professional.NearbyProfessional;
 import com.alamano.core.domain.professional.Professional;
@@ -24,12 +25,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProfessionalController {
     private final FindNearbyProfessionalsUseCase findNearbyProfessionalsUseCase;
     private final ConnectProfessionalUseCase connectProfessionalUseCase;
+    private final DisconnectProfessionalUseCase disconnectProfessionalUseCase;
 
     public ProfessionalController(
             FindNearbyProfessionalsUseCase findNearbyProfessionalsUseCase,
-            ConnectProfessionalUseCase connectProfessionalUseCase) {
+            ConnectProfessionalUseCase connectProfessionalUseCase,
+            DisconnectProfessionalUseCase disconnectProfessionalUseCase) {
         this.findNearbyProfessionalsUseCase = findNearbyProfessionalsUseCase;
         this.connectProfessionalUseCase = connectProfessionalUseCase;
+        this.disconnectProfessionalUseCase = disconnectProfessionalUseCase;
     }
 
     @GetMapping("/nearby")
@@ -51,5 +55,13 @@ public class ProfessionalController {
         Professional professional = connectProfessionalUseCase.connect(
                 jwt.getSubject(), request.latitude(), request.longitude(), correlationId);
         return ProfessionalResponse.from(professional);
+    }
+
+    /** El id sale del sub del token y el request no necesita cuerpo. */
+    @PostMapping("/me/offline")
+    public ProfessionalResponse goOffline(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "X-Correlation-Id", required = false) String correlationId) {
+        return ProfessionalResponse.from(disconnectProfessionalUseCase.goOffline(jwt.getSubject(), correlationId));
     }
 }

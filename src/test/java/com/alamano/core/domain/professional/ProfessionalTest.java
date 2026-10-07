@@ -2,6 +2,8 @@ package com.alamano.core.domain.professional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -52,5 +54,27 @@ class ProfessionalTest {
         Professional busy = new Professional("pro-1", ProfessionalStatus.BUSY, OLD_LOCATION, BEFORE, 2);
 
         assertThrows(ProfessionalBusyException.class, () -> busy.goOnline(NEW_LOCATION, NOW));
+    }
+
+    @Test
+    void goOfflineFromAvailablePreservesLocationAndIncrementsVersion() {
+        Professional available = new Professional("pro-1", ProfessionalStatus.AVAILABLE, OLD_LOCATION, BEFORE, 7);
+        Professional offline = available.goOffline(NOW);
+        assertEquals(ProfessionalStatus.OFFLINE, offline.status());
+        assertEquals(OLD_LOCATION, offline.location());
+        assertEquals(8, offline.version());
+    }
+
+    @Test
+    void goOfflineWhileBusyIsRejected() {
+        Professional busy = new Professional("pro-1", ProfessionalStatus.BUSY, OLD_LOCATION, BEFORE, 2);
+        assertThrows(ProfessionalBusyException.class, () -> busy.goOffline(NOW));
+    }
+
+    @Test
+    void detectsReconnectAfterGivenInstant() {
+        Professional online = new Professional("pro-1", ProfessionalStatus.AVAILABLE, NEW_LOCATION, NOW, 1);
+        assertTrue(online.wentOnlineAfter(BEFORE));
+        assertFalse(online.wentOnlineAfter(NOW));
     }
 }

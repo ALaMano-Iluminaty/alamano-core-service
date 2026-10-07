@@ -10,6 +10,7 @@ import com.alamano.core.application.port.out.ProfessionalEventPublisherPort;
 import com.alamano.core.application.port.out.ProfessionalRepositoryPort;
 import com.alamano.core.domain.professional.GeoPoint;
 import com.alamano.core.domain.professional.Professional;
+import com.alamano.core.domain.professional.DisconnectReason;
 import com.alamano.core.domain.professional.ProfessionalBusyException;
 import com.alamano.core.domain.professional.ProfessionalConcurrentUpdateException;
 import com.alamano.core.domain.professional.ProfessionalStatus;
@@ -125,6 +126,9 @@ class ConnectProfessionalServiceTest {
         public void publishOnline(Professional professional, String correlationId) {
             published.add(new Published(professional, correlationId));
         }
+
+        @Override
+        public void publishDisconnected(Professional professional, DisconnectReason reason, String correlationId) {}
     }
 
     /** Repositorio en memoria; failingUpdates simula que otro request cambió la versión. */

@@ -95,3 +95,40 @@ Después de guardar, el Core publica `professional.online` en el exchange `alama
   }
 }
 ```
+
+## HU5: desconectarme
+
+`POST /api/professionals/me/offline` marca al vendedor como `OFFLINE` para que deje de aparecer en `GET /api/professionals/nearby`. El endpoint no recibe cuerpo; el identificador se toma del `sub` del token. Acepta el header opcional `X-Correlation-Id`.
+
+| Respuesta | Cuándo |
+|---|---|
+| **200** | Quedó desconectado o ya estaba `OFFLINE` (operación idempotente). Devuelve `ProfessionalResponse`. |
+| **401** | Falta el token o no es válido. |
+| **403** | El token no tiene rol `PROFESSIONAL`. |
+| **404** | No existe el vendedor (`professional_not_found`). |
+| **409** | El vendedor está `BUSY` (`professional_busy`) o hubo dos conflictos de versión (`concurrent_update`). |
+
+El Core consume el aviso técnico del Gateway en la cola durable `core.professional-connection`. Solo desconecta a vendedores `AVAILABLE` cuya conexión más reciente no sea posterior a la hora del aviso. Si hubo una reconexión posterior, se ignora el aviso antiguo y el vendedor continúa visible en el mapa.
+
+| Evento | Emisor | Significado |
+|---|---|---|
+| `professional.connection.lost` | Realtime Gateway | Hecho técnico: se perdió el socket del vendedor. El Core lo consume y decide si debe desconectarlo. |
+| `professional.disconnected` | Core | Hecho de negocio: el vendedor quedó `OFFLINE`; el Gateway lo distribuye a los clientes del mapa. |
+
+El Core publica `professional.disconnected` después de guardar el cambio, con routing key del mismo nombre. El payload incluye el motivo manual (`MANUAL`) o la pérdida de conexión (`CONNECTION_LOST`):
+
+```json
+{
+  "eventId": "7d0f2c1e-...",
+  "type": "professional.disconnected",
+  "schemaVersion": 1,
+  "occurredAt": "2026-09-30T12:05:00Z",
+  "correlationId": "c0ffee-...",
+  "payload": {
+    "professionalId": "pro-1",
+    "status": "OFFLINE",
+    "version": 1,
+    "reason": "MANUAL"
+  }
+}
+```
