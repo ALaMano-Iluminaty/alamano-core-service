@@ -5,5 +5,5 @@ import com.alamano.core.domain.service.ServiceStatus;
 import java.util.UUID;
 
 public interface ChangeServiceStatusUseCase {
-    Service changeStatus(UUID serviceId, ServiceStatus targetStatus, String correlationId);
+    Service changeStatus(UUID serviceId, ServiceStatus targetStatus, String userId, String correlationId);
 }

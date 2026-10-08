@@ -32,7 +32,11 @@ public class RabbitServiceStatusChangedPublisher implements ServiceStatusChanged
         payload.put("serviceId", service.id().toString());
         payload.put("professionalId", service.professionalId());
         payload.put("clientId", service.clientId());
-        payload.put("previousStatus", previousStatus.name());
+        if (previousStatus == null) {
+            payload.putNull("previousStatus");
+        } else {
+            payload.put("previousStatus", previousStatus.name());
+        }
         payload.put("status", service.status().name());
         payload.put("version", service.version());
 
