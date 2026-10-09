@@ -1,0 +1,21 @@
+# Imagen de alamano-core-service. Multi-stage: compila con Maven y corre sobre un JRE liviano.
+#   docker build -t alamano-core-service .
+# Dentro de alamano-infra la construye docker compose.
+
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /app
+# El pom va primero y solo: asi la capa de dependencias se reutiliza
+# mientras no cambie, y los cambios de codigo no vuelven a bajar todo.
+COPY pom.xml .
+RUN mvn -B -q dependency:go-offline
+COPY src ./src
+# Las pruebas ya corrieron en el job anterior del CI.
+RUN mvn -B -q clean package -DskipTests
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+RUN addgroup -S app && adduser -S app -G app
+COPY --from=build /app/target/*.jar app.jar
+USER app
+EXPOSE 8082
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
