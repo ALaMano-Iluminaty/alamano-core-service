@@ -8,6 +8,9 @@ import com.alamano.core.domain.professional.InvalidSearchAreaException;
 import com.alamano.core.domain.professional.ProfessionalBusyException;
 import com.alamano.core.domain.professional.ProfessionalConcurrentUpdateException;
 import com.alamano.core.domain.professional.ProfessionalNotFoundException;
+import com.alamano.core.domain.promotion.InvalidPromotionException;
+import com.alamano.core.domain.promotion.PromotionCounterUnavailableException;
+import com.alamano.core.domain.promotion.PromotionNotFoundException;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
@@ -88,5 +91,24 @@ public class RestExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     Map<String, Object> professionalNotFound(ProfessionalNotFoundException ex) {
         return Map.of("error", "professional_not_found", "message", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidPromotionException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    Map<String, Object> invalidPromotion(InvalidPromotionException ex) {
+        return Map.of("error", "invalid_promotion", "message", ex.getMessage());
+    }
+
+    @ExceptionHandler(PromotionNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    Map<String, Object> promotionNotFound(PromotionNotFoundException ex) {
+        return Map.of("error", "promotion_not_found", "message", ex.getMessage(),
+                "promotionId", ex.promotionId().toString());
+    }
+
+    @ExceptionHandler(PromotionCounterUnavailableException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    Map<String, Object> promotionCounterUnavailable(PromotionCounterUnavailableException ex) {
+        return Map.of("error", "promotion_counter_unavailable", "message", ex.getMessage());
     }
 }

@@ -20,6 +20,12 @@ import com.alamano.core.application.service.CreateServiceService;
 import com.alamano.core.application.service.FindNearbyProfessionalsService;
 import com.alamano.core.application.service.UpdateTrackingService;
 import com.alamano.core.domain.tracking.EtaCalculator;
+import com.alamano.core.application.port.in.GetPromotionUseCase;
+import com.alamano.core.application.port.in.PublishPromotionUseCase;
+import com.alamano.core.application.port.out.PromotionCounterPort;
+import com.alamano.core.application.port.out.PromotionRepositoryPort;
+import com.alamano.core.application.service.GetPromotionService;
+import com.alamano.core.application.service.PublishPromotionService;
 import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -77,5 +83,17 @@ public class ApplicationConfig {
             ProfessionalEventPublisherPort publisher,
             Clock clock) {
         return new DisconnectProfessionalService(repository, publisher, clock);
+    }
+
+    @Bean
+    PublishPromotionUseCase publishPromotionUseCase(
+            PromotionRepositoryPort repository, PromotionCounterPort counter, Clock clock) {
+        return new PublishPromotionService(repository, counter, clock);
+    }
+
+    @Bean
+    GetPromotionUseCase getPromotionUseCase(
+            PromotionRepositoryPort repository, PromotionCounterPort counter) {
+        return new GetPromotionService(repository, counter);
     }
 }
