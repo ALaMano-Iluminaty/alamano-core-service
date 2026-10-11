@@ -85,6 +85,9 @@ class UpdateTrackingServiceTest {
         public boolean updateStatusIfMatches(UUID id, ServiceStatus expected, long version, Service updated) {
             service = updated; return true;
         }
+        public boolean hasActiveService(String professionalId) {
+            return service != null && professionalId.equals(service.professionalId()) && !service.isTerminal();
+        }
     }
 
     private static class MemoryTracking implements TrackingRepositoryPort {

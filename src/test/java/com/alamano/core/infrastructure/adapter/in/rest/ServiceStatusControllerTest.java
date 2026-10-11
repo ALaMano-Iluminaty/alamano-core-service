@@ -8,6 +8,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -30,28 +31,28 @@ class ServiceStatusControllerTest {
 
     @Test
     void createAcceptsOptionalDestinationAndPersistsIt() throws Exception {
+        givenAvailable("pro-dest");
+        givenAvailable("pro-no-dest");
         MvcResult withDestination = mockMvc.perform(post("/api/services")
                         .with(jwt().jwt(token -> token.subject("client-destination").claim("role", "CLIENT")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"professionalId":"pro-dest","clientId":"client-destination",
+                                {"professionalId":"pro-dest",
                                  "destinationLatitude":4.65,"destinationLongitude":-74.06}
                                 """))
                 .andExpect(status().isCreated())
                 .andReturn();
-        String destinationId = withDestination.getResponse().getContentAsString()
-                .replaceAll(".*\\\"id\\\"\\s*:\\s*\\\"([^\\\"]+)\\\".*", "$1");
+        String destinationId = JsonPath.read(withDestination.getResponse().getContentAsString(), "$.id");
 
         MvcResult withoutDestination = mockMvc.perform(post("/api/services")
                         .with(jwt().jwt(token -> token.subject("client-no-destination").claim("role", "CLIENT")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"professionalId":"pro-no-dest","clientId":"client-no-destination"}
+                                {"professionalId":"pro-no-dest"}
                                 """))
                 .andExpect(status().isCreated())
                 .andReturn();
-        String noDestinationId = withoutDestination.getResponse().getContentAsString()
-                .replaceAll(".*\\\"id\\\"\\s*:\\s*\\\"([^\\\"]+)\\\".*", "$1");
+        String noDestinationId = JsonPath.read(withoutDestination.getResponse().getContentAsString(), "$.id");
 
         assertEquals(4.65, jdbc.queryForObject("SELECT destination_latitude FROM services WHERE id = ?",
                 Double.class, java.util.UUID.fromString(destinationId)));
@@ -63,17 +64,17 @@ class ServiceStatusControllerTest {
 
     @Test
     void invalidTransitionReturns409() throws Exception {
+        givenAvailable("pro-1");
         MvcResult created = mockMvc.perform(post("/api/services")
                         .with(jwt().jwt(token -> token.subject("client-1").claim("role", "CLIENT")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"professionalId":"pro-1","clientId":"cli-1"}
+                                {"professionalId":"pro-1"}
                                 """))
                 .andExpect(status().isCreated())
                 .andReturn();
 
-        String body = created.getResponse().getContentAsString();
-        String serviceId = body.replaceAll(".*\"id\"\\s*:\\s*\"([^\"]+)\".*", "$1");
+        String serviceId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
 
         mockMvc.perform(patch("/api/services/" + serviceId + "/status")
                         .with(jwt().jwt(token -> token.subject("pro-1").claim("role", "PROFESSIONAL")))
@@ -87,17 +88,18 @@ class ServiceStatusControllerTest {
 
     @Test
     void validTransitionUpdatesStatus() throws Exception {
+        givenAvailable("pro-2");
         MvcResult created = mockMvc.perform(post("/api/services")
                         .with(jwt().jwt(token -> token.subject("client-2").claim("role", "CLIENT")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"professionalId":"pro-2","clientId":"cli-2"}
+                                {"professionalId":"pro-2"}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("RESERVED"))
                 .andReturn();
 
-        String serviceId = created.getResponse().getContentAsString().replaceAll(".*\"id\"\\s*:\\s*\"([^\"]+)\".*", "$1");
+        String serviceId = JsonPath.read(created.getResponse().getContentAsString(), "$.id");
 
         mockMvc.perform(patch("/api/services/" + serviceId + "/status")
                         .with(jwt().jwt(token -> token.subject("pro-2").claim("role", "PROFESSIONAL")))
@@ -139,11 +141,20 @@ class ServiceStatusControllerTest {
     }
 
     private String createService(String professionalId, String clientId) throws Exception {
+        givenAvailable(professionalId);
         MvcResult created = mockMvc.perform(post("/api/services")
                         .with(jwt().jwt(token -> token.subject(clientId).claim("role", "CLIENT")))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"professionalId\":\"" + professionalId + "\",\"clientId\":\"" + clientId + "\"}"))
+                        .content("{\"professionalId\":\"" + professionalId + "\"}"))
                 .andExpect(status().isCreated()).andReturn();
-        return created.getResponse().getContentAsString().replaceAll(".*\\\"id\\\"\\s*:\\s*\\\"([^\\\"]+)\\\".*", "$1");
+        return JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+    }
+
+    private void givenAvailable(String professionalId) {
+        jdbc.update("DELETE FROM services WHERE professional_id = ?", professionalId);
+        jdbc.update("DELETE FROM professionals WHERE id = ?", professionalId);
+        jdbc.update(
+                "INSERT INTO professionals (id, status, latitude, longitude) VALUES (?, 'AVAILABLE', 4.65, -74.06)",
+                professionalId);
     }
 }

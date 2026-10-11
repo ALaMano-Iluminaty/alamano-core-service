@@ -35,6 +35,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/professionals/me/**").hasRole("PROFESSIONAL")
                         .requestMatchers(HttpMethod.POST, "/api/promotions").hasRole("PROFESSIONAL")
+                        .requestMatchers(HttpMethod.GET, "/api/promotions/mine").hasRole("PROFESSIONAL")
+                        .requestMatchers(HttpMethod.POST, "/api/services/*/location").hasRole("PROFESSIONAL")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))

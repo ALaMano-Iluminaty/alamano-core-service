@@ -27,8 +27,10 @@ El health check queda en `http://localhost:8082/actuator/health`.
 
 Flujo permitido: `RESERVED` → `EN_ROUTE` → `ARRIVED` → `IN_PROGRESS` → `COMPLETED`. Desde `RESERVED` o `EN_ROUTE` también se puede pasar a `CANCELLED`.
 
-- `POST /api/services` — crea un servicio en `RESERVED` (provisional hasta HU10/reserva).
+- `POST /api/services` — reserva atómica: el `clientId` sale del JWT; el barbero pasa a ocupado solo si seguía disponible. Si no, **409**.
+- `GET /api/services/{id}` — estado, destino, última ubicación, ETA. Solo cliente o barbero del servicio.
 - `PATCH /api/services/{id}/status` — cambia el estado; transición inválida → **409**.
+- `POST /api/services/{id}/location` — el barbero reporta posición (misma regla que el evento de ubicación).
 
 Cada cambio válido persiste en Postgres con `UPDATE` condicional y publica `service.status.changed` en el exchange `alamano.events` (mismo sobre que consume el Gateway).
 
@@ -181,9 +183,12 @@ El Core publica `professional.disconnected` después de guardar el cambio, con r
 
 - `POST /api/promotions` — solo rol `PROFESSIONAL`. Cuerpo: `{"description": "2x1 en cortes", "totalSlots": 50}`. El vendedor sale del `sub` del token. Responde **201** con `id`, `totalSlots` y `availableSlots`.
 - `GET /api/promotions/{id}` — cualquier usuario autenticado; `availableSlots` sale del contador de Redis.
+- `GET /api/promotions/mine` — las del barbero autenticado.
+- `GET /api/professionals/{id}/promotions` y las promociones embebidas en `GET /api/professionals/nearby`.
+- `POST /api/promotions/{id}/claim` o `/claims` — baja un cupo en Redis (Lua) y guarda el claim. **409** si no quedan cupos o el mismo cliente ya la tomó.
 
 Primero se guarda en Postgres (tabla `promotions`, migración `V4`) y después se inicia el contador atómico en Redis con la clave `promotion:{id}:cupos`. Postgres y Redis no comparten transacción: si Redis falla, se borra la promoción recién guardada y la respuesta es **503** (`promotion_counter_unavailable`), así no queda una promoción visible sin cupos. Si además falla el borrado, queda una fila sin contador y la excepción original conserva el error secundario como `suppressed`.
 
 Validaciones (**400**): descripción obligatoria de máximo 500 caracteres y cupos entre 1 y 10000. Un cliente recibe **403**; sin token, **401**.
 
-`PromotionCounterPort` solo tiene `initialize` y `remaining`. HU11 agrega ahí el decremento atómico (script Lua) con la misma clave. Redis se configura con `REDIS_HOST` y `REDIS_PORT`. En el perfil `test` el contador es en memoria (`InMemoryPromotionCounterAdapter`), igual que los publicadores NoOp de RabbitMQ.
+El decremento atómico (HU11) usa `tryClaim` sobre la misma clave `promotion:{id}:cupos`. Redis se configura con `REDIS_HOST` y `REDIS_PORT`. En el perfil `test` el contador es en memoria (`InMemoryPromotionCounterAdapter`), igual que los publicadores NoOp de RabbitMQ.

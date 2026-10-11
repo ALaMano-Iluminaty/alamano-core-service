@@ -94,6 +94,26 @@ class RedisPromotionCounterAdapterTest {
     }
 
     @Test
+    void tryClaimUsaElScriptYDevuelveCuposRestantes() {
+        StringRedisTemplate redis = mock(StringRedisTemplate.class);
+        when(redis.execute(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyList()))
+                .thenReturn(3L);
+        adaptador = new RedisPromotionCounterAdapter(redis);
+
+        assertEquals(3, adaptador.tryClaim(ID).getAsInt());
+    }
+
+    @Test
+    void tryClaimVacioSiNoQuedanCupos() {
+        StringRedisTemplate redis = mock(StringRedisTemplate.class);
+        when(redis.execute(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyList()))
+                .thenReturn(-1L);
+        adaptador = new RedisPromotionCounterAdapter(redis);
+
+        assertTrue(adaptador.tryClaim(ID).isEmpty());
+    }
+
+    @Test
     void unValorCorruptoNoSePropagaComoErrorDeNumero() {
         // Si alguien escribe basura en la clave, debe salir el error del dominio,
         // no un NumberFormatException suelto que acabe en un 500.

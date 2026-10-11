@@ -125,6 +125,30 @@ public class ProfessionalJdbcAdapter implements ProfessionalQueryPort, Professio
         return rows == 1;
     }
 
+    @Override
+    public boolean markBusyIfAvailable(String professionalId) {
+        int rows = jdbc.update(
+                """
+                UPDATE professionals
+                SET status = 'BUSY', version = version + 1
+                WHERE id = ? AND status = 'AVAILABLE'
+                """,
+                professionalId);
+        return rows == 1;
+    }
+
+    @Override
+    public boolean releaseIfBusy(String professionalId) {
+        int rows = jdbc.update(
+                """
+                UPDATE professionals
+                SET status = 'AVAILABLE', version = version + 1
+                WHERE id = ? AND status = 'BUSY'
+                """,
+                professionalId);
+        return rows == 1;
+    }
+
     private static Professional mapProfessional(ResultSet rs, int rowNum) throws SQLException {
         double latitude = rs.getDouble("latitude");
         boolean latitudeNull = rs.wasNull();

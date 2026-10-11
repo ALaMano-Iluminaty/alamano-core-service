@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.alamano.core.application.port.out.ProfessionalRepositoryPort;
 import com.alamano.core.application.port.out.ServiceRepositoryPort;
 import com.alamano.core.application.port.out.ServiceStatusChangedPublisherPort;
 import com.alamano.core.domain.service.InvalidServiceStatusTransitionException;
@@ -28,16 +29,19 @@ import static org.mockito.Mockito.mock;
 class ChangeServiceStatusServiceTest {
     private final UUID id = UUID.randomUUID();
     private ServiceRepositoryPort repository;
+    private ProfessionalRepositoryPort professionals;
     private ServiceStatusChangedPublisherPort publisher;
     private ChangeServiceStatusService useCase;
 
     @BeforeEach
     void setUp() {
         repository = mock(ServiceRepositoryPort.class);
+        professionals = mock(ProfessionalRepositoryPort.class);
         publisher = mock(ServiceStatusChangedPublisherPort.class);
-        useCase = new ChangeServiceStatusService(repository, publisher,
+        useCase = new ChangeServiceStatusService(repository, professionals, publisher,
                 Clock.fixed(Instant.parse("2026-10-07T12:00:00Z"), ZoneOffset.UTC));
         when(repository.updateStatusIfMatches(any(), any(), any(Long.class), any())).thenReturn(true);
+        when(repository.hasActiveService(any())).thenReturn(false);
     }
 
     @Test
@@ -53,6 +57,7 @@ class ChangeServiceStatusServiceTest {
         given(ServiceStatus.RESERVED);
         Service updated = useCase.changeStatus(id, ServiceStatus.CANCELLED, "cli-1", null);
         assertEquals(ServiceStatus.CANCELLED, updated.status());
+        verify(professionals).releaseIfBusy("pro-1");
         verify(publisher).publish(updated, ServiceStatus.RESERVED, null);
     }
 

@@ -5,6 +5,8 @@ import com.alamano.core.domain.promotion.Promotion;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -46,6 +48,32 @@ public class PromotionJdbcAdapter implements PromotionRepositoryPort {
                         promotionId)
                 .stream()
                 .findFirst();
+    }
+
+    @Override
+    public List<Promotion> findByProfessionalId(String professionalId) {
+        return jdbc.query(
+                """
+                SELECT id, professional_id, description, total_slots, created_at
+                FROM promotions WHERE professional_id = ? ORDER BY created_at DESC
+                """,
+                ROW_MAPPER,
+                professionalId);
+    }
+
+    @Override
+    public List<Promotion> findByProfessionalIds(Collection<String> professionalIds) {
+        if (professionalIds.isEmpty()) {
+            return List.of();
+        }
+        String placeholders = professionalIds.stream().map(id -> "?").reduce((a, b) -> a + "," + b).orElse("");
+        return jdbc.query(
+                """
+                SELECT id, professional_id, description, total_slots, created_at
+                FROM promotions WHERE professional_id IN (%s) ORDER BY created_at DESC
+                """.formatted(placeholders),
+                ROW_MAPPER,
+                professionalIds.toArray());
     }
 
     @Override

@@ -11,4 +11,10 @@ public interface ProfessionalRepositoryPort {
 
     /** Devuelve true solo si la fila seguía en la versión esperada y se actualizó. */
     boolean updateIfVersionMatches(Professional updated, long expectedVersion);
+
+    /** Pasa a ocupado solo si seguía disponible. Cero filas: no existe o ya no está libre. */
+    boolean markBusyIfAvailable(String professionalId);
+
+    /** Devuelve al mapa solo si seguía ocupado. */
+    boolean releaseIfBusy(String professionalId);
 }

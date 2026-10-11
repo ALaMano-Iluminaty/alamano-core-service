@@ -13,4 +13,13 @@ public interface PromotionCounterPort {
 
     /** Cupos que quedan, o vacío si el contador no existe. */
     OptionalInt remaining(UUID promotionId);
+
+    /**
+     * Baja un cupo de forma atómica. Vacío si no hay clave o no quedan cupos.
+     * El valor, si existe, son los cupos que quedan después del decremento.
+     */
+    OptionalInt tryClaim(UUID promotionId);
+
+    /** Devuelve un cupo (compensación si falló guardar el claim). */
+    void restore(UUID promotionId);
 }

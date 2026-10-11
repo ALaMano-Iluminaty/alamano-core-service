@@ -48,7 +48,8 @@ public class ServiceJdbcAdapter implements ServiceRepositoryPort, TrackingReposi
         return jdbc.query(
                         """
                         SELECT id, professional_id, client_id, status, version, created_at, updated_at,
-                            destination_latitude, destination_longitude
+                            destination_latitude, destination_longitude,
+                            last_latitude, last_longitude, last_tracked_at
                         FROM services WHERE id = ?
                         """,
                         ROW_MAPPER,
@@ -76,6 +77,18 @@ public class ServiceJdbcAdapter implements ServiceRepositoryPort, TrackingReposi
     }
 
     @Override
+    public boolean hasActiveService(String professionalId) {
+        Integer count = jdbc.queryForObject(
+                """
+                SELECT COUNT(*) FROM services
+                WHERE professional_id = ? AND status NOT IN ('COMPLETED', 'CANCELLED')
+                """,
+                Integer.class,
+                professionalId);
+        return count != null && count > 0;
+    }
+
+    @Override
     public boolean saveLastLocationIfNewer(String serviceId, com.alamano.core.domain.professional.GeoPoint location,
             Instant recordedAt) {
         int rows = jdbc.update(
@@ -99,6 +112,9 @@ public class ServiceJdbcAdapter implements ServiceRepositoryPort, TrackingReposi
                 rs.getTimestamp("created_at").toInstant(),
                 rs.getTimestamp("updated_at").toInstant(),
                 (Double) rs.getObject("destination_latitude"),
-                (Double) rs.getObject("destination_longitude"));
+                (Double) rs.getObject("destination_longitude"),
+                (Double) rs.getObject("last_latitude"),
+                (Double) rs.getObject("last_longitude"),
+                rs.getTimestamp("last_tracked_at") == null ? null : rs.getTimestamp("last_tracked_at").toInstant());
     }
 }

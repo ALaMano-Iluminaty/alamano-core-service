@@ -24,4 +24,24 @@ public class InMemoryPromotionCounterAdapter implements PromotionCounterPort {
         Integer value = slots.get(promotionId);
         return value == null ? OptionalInt.empty() : OptionalInt.of(value);
     }
+
+    @Override
+    public OptionalInt tryClaim(UUID promotionId) {
+        final Integer[] remaining = new Integer[1];
+        slots.compute(promotionId, (id, current) -> {
+            if (current == null || current <= 0) {
+                remaining[0] = null;
+                return current;
+            }
+            int next = current - 1;
+            remaining[0] = next;
+            return next;
+        });
+        return remaining[0] == null ? OptionalInt.empty() : OptionalInt.of(remaining[0]);
+    }
+
+    @Override
+    public void restore(UUID promotionId) {
+        slots.compute(promotionId, (id, current) -> current == null ? 1 : current + 1);
+    }
 }

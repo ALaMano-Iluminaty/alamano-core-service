@@ -161,5 +161,27 @@ class ConnectProfessionalServiceTest {
             stored.put(updated.id(), updated);
             return true;
         }
+
+        @Override
+        public boolean markBusyIfAvailable(String professionalId) {
+            Professional current = stored.get(professionalId);
+            if (current == null || current.status() != ProfessionalStatus.AVAILABLE) {
+                return false;
+            }
+            stored.put(professionalId, new Professional(current.id(), ProfessionalStatus.BUSY, current.location(),
+                    current.locationUpdatedAt(), current.version() + 1));
+            return true;
+        }
+
+        @Override
+        public boolean releaseIfBusy(String professionalId) {
+            Professional current = stored.get(professionalId);
+            if (current == null || current.status() != ProfessionalStatus.BUSY) {
+                return false;
+            }
+            stored.put(professionalId, new Professional(current.id(), ProfessionalStatus.AVAILABLE, current.location(),
+                    current.locationUpdatedAt(), current.version() + 1));
+            return true;
+        }
     }
 }

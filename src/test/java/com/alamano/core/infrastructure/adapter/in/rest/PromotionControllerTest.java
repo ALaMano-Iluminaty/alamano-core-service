@@ -46,6 +46,7 @@ class PromotionControllerTest {
 
     @BeforeEach
     void setUp() {
+        jdbc.update("DELETE FROM promotion_claims");
         jdbc.update("DELETE FROM promotions");
     }
 

@@ -9,8 +9,11 @@ import com.alamano.core.domain.professional.ProfessionalBusyException;
 import com.alamano.core.domain.professional.ProfessionalConcurrentUpdateException;
 import com.alamano.core.domain.professional.ProfessionalNotFoundException;
 import com.alamano.core.domain.promotion.InvalidPromotionException;
+import com.alamano.core.domain.promotion.PromotionAlreadyClaimedException;
 import com.alamano.core.domain.promotion.PromotionCounterUnavailableException;
+import com.alamano.core.domain.promotion.PromotionNoSlotsException;
 import com.alamano.core.domain.promotion.PromotionNotFoundException;
+import com.alamano.core.domain.service.ServiceInactiveException;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
@@ -110,5 +113,17 @@ public class RestExceptionHandler {
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     Map<String, Object> promotionCounterUnavailable(PromotionCounterUnavailableException ex) {
         return Map.of("error", "promotion_counter_unavailable", "message", ex.getMessage());
+    }
+
+    @ExceptionHandler({PromotionNoSlotsException.class, PromotionAlreadyClaimedException.class})
+    @ResponseStatus(HttpStatus.CONFLICT)
+    Map<String, Object> promotionClaimConflict(RuntimeException ex) {
+        return Map.of("error", "promotion_claim_conflict", "message", ex.getMessage());
+    }
+
+    @ExceptionHandler(ServiceInactiveException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    Map<String, Object> serviceInactive(ServiceInactiveException ex) {
+        return Map.of("error", "service_inactive", "message", ex.getMessage(), "serviceId", ex.serviceId().toString());
     }
 }

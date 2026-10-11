@@ -13,9 +13,20 @@ public record ServiceResponse(
         ServiceStatus status,
         long version,
         Instant updatedAt,
-        Set<String> allowedTransitions) {
+        Set<String> allowedTransitions,
+        Double destinationLatitude,
+        Double destinationLongitude,
+        Double lastLatitude,
+        Double lastLongitude,
+        Instant lastTrackedAt,
+        Integer etaSeconds,
+        ProfessionalSummaryResponse professional) {
 
-    public static ServiceResponse from(Service service, Set<String> allowedTransitions) {
+    public static ServiceResponse from(
+            Service service,
+            Set<String> allowedTransitions,
+            Integer etaSeconds,
+            ProfessionalSummaryResponse professional) {
         return new ServiceResponse(
                 service.id(),
                 service.professionalId(),
@@ -23,6 +34,13 @@ public record ServiceResponse(
                 service.status(),
                 service.version(),
                 service.updatedAt(),
-                allowedTransitions);
+                allowedTransitions,
+                service.destinationLatitude(),
+                service.destinationLongitude(),
+                service.lastLatitude(),
+                service.lastLongitude(),
+                service.lastTrackedAt(),
+                etaSeconds,
+                professional);
     }
 }

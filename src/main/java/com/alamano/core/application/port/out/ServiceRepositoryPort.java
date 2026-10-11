@@ -13,4 +13,5 @@ public interface ServiceRepositoryPort {
     boolean updateStatusIfMatches(
             UUID serviceId, ServiceStatus expectedStatus, long expectedVersion, Service updated);
 
+    boolean hasActiveService(String professionalId);
 }
