@@ -14,6 +14,7 @@ import com.alamano.core.domain.tracking.EtaCalculator;
 import com.alamano.core.domain.tracking.TrackingUpdate;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,6 +89,8 @@ class UpdateTrackingServiceTest {
         public boolean hasActiveService(String professionalId) {
             return service != null && professionalId.equals(service.professionalId()) && !service.isTerminal();
         }
+        public List<Service> findActiveByProfessionalId(String professionalId) { return List.of(); }
+        public List<Service> findActiveByClientId(String clientId) { return List.of(); }
     }
 
     private static class MemoryTracking implements TrackingRepositoryPort {
