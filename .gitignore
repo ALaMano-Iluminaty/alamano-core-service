@@ -34,3 +34,7 @@ build/
 
 ### Claude Code (configuración local) ###
 .claude/settings.local.json
+
+### Volcados de una JVM caída ###
+hs_err_pid*.log
+replay_pid*.log

@@ -8,6 +8,7 @@ import com.alamano.core.application.port.in.DisconnectProfessionalUseCase;
 import com.alamano.core.application.port.in.FindNearbyProfessionalsUseCase;
 import com.alamano.core.application.port.in.GetPromotionUseCase;
 import com.alamano.core.application.port.in.GetServiceUseCase;
+import com.alamano.core.application.port.in.ListActiveServicesUseCase;
 import com.alamano.core.application.port.in.ListPromotionsUseCase;
 import com.alamano.core.application.port.in.PublishPromotionUseCase;
 import com.alamano.core.application.port.in.ReportServiceLocationUseCase;
@@ -30,6 +31,7 @@ import com.alamano.core.application.service.DisconnectProfessionalService;
 import com.alamano.core.application.service.FindNearbyProfessionalsService;
 import com.alamano.core.application.service.GetPromotionService;
 import com.alamano.core.application.service.GetServiceService;
+import com.alamano.core.application.service.ListActiveServicesService;
 import com.alamano.core.application.service.ListPromotionsService;
 import com.alamano.core.application.service.PublishPromotionService;
 import com.alamano.core.application.service.ReportServiceLocationService;
@@ -93,6 +95,11 @@ public class ApplicationConfig {
     @Bean
     GetServiceUseCase getServiceUseCase(ServiceRepositoryPort repository) {
         return new GetServiceService(repository);
+    }
+
+    @Bean
+    ListActiveServicesUseCase listActiveServicesUseCase(ServiceRepositoryPort repository) {
+        return new ListActiveServicesService(repository);
     }
 
     @Bean

@@ -3,6 +3,7 @@ package com.alamano.core.infrastructure.adapter.in.rest;
 import com.alamano.core.application.port.in.ChangeServiceStatusUseCase;
 import com.alamano.core.application.port.in.CreateServiceUseCase;
 import com.alamano.core.application.port.in.GetServiceUseCase;
+import com.alamano.core.application.port.in.ListActiveServicesUseCase;
 import com.alamano.core.application.port.in.ReportServiceLocationUseCase;
 import com.alamano.core.domain.service.Service;
 import com.alamano.core.infrastructure.adapter.in.rest.dto.ChangeServiceStatusRequest;
@@ -12,6 +13,7 @@ import com.alamano.core.infrastructure.adapter.in.rest.dto.ServiceResponse;
 import jakarta.validation.Valid;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -32,6 +34,7 @@ public class ServiceController {
     private final CreateServiceUseCase createServiceUseCase;
     private final ChangeServiceStatusUseCase changeServiceStatusUseCase;
     private final GetServiceUseCase getServiceUseCase;
+    private final ListActiveServicesUseCase listActiveServicesUseCase;
     private final ReportServiceLocationUseCase reportServiceLocationUseCase;
     private final ServiceResponseAssembler responses;
     private final Clock clock;
@@ -40,12 +43,14 @@ public class ServiceController {
             CreateServiceUseCase createServiceUseCase,
             ChangeServiceStatusUseCase changeServiceStatusUseCase,
             GetServiceUseCase getServiceUseCase,
+            ListActiveServicesUseCase listActiveServicesUseCase,
             ReportServiceLocationUseCase reportServiceLocationUseCase,
             ServiceResponseAssembler responses,
             Clock clock) {
         this.createServiceUseCase = createServiceUseCase;
         this.changeServiceStatusUseCase = changeServiceStatusUseCase;
         this.getServiceUseCase = getServiceUseCase;
+        this.listActiveServicesUseCase = listActiveServicesUseCase;
         this.reportServiceLocationUseCase = reportServiceLocationUseCase;
         this.responses = responses;
         this.clock = clock;
@@ -61,6 +66,14 @@ public class ServiceController {
                 request.destinationLatitude(),
                 request.destinationLongitude());
         return responses.from(service);
+    }
+
+    /** Ruta literal: Spring la prefiere sobre /{serviceId}, así que "active" nunca se toma como id. */
+    @GetMapping("/active")
+    public List<ServiceResponse> active(@AuthenticationPrincipal Jwt jwt) {
+        return listActiveServicesUseCase.listActive(jwt.getSubject()).stream()
+                .map(responses::from)
+                .toList();
     }
 
     @GetMapping("/{serviceId}")

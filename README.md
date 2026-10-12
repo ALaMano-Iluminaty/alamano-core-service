@@ -28,6 +28,7 @@ El health check queda en `http://localhost:8082/actuator/health`.
 Flujo permitido: `RESERVED` → `EN_ROUTE` → `ARRIVED` → `IN_PROGRESS` → `COMPLETED`. Desde `RESERVED` o `EN_ROUTE` también se puede pasar a `CANCELLED`.
 
 - `POST /api/services` — reserva atómica: el `clientId` sale del JWT; el barbero pasa a ocupado solo si seguía disponible. Si no, **409**.
+- `GET /api/services/active` — servicios no terminados (`RESERVED`, `EN_ROUTE`, `ARRIVED`, `IN_PROGRESS`) donde el `sub` del JWT es el barbero o el cliente, del más reciente al más antiguo (`updatedAt`). Cada elemento tiene la misma forma que `GET /api/services/{id}`; si no hay ninguno responde `[]`. Sirve para recuperar los servicios tras una desconexión.
 - `GET /api/services/{id}` — estado, destino, última ubicación, ETA. Solo cliente o barbero del servicio.
 - `PATCH /api/services/{id}/status` — cambia el estado; transición inválida → **409**.
 - `POST /api/services/{id}/location` — el barbero reporta posición (misma regla que el evento de ubicación).

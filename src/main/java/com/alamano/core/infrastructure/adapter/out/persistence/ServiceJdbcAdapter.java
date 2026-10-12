@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,6 +18,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class ServiceJdbcAdapter implements ServiceRepositoryPort, TrackingRepositoryPort {
     private static final RowMapper<Service> ROW_MAPPER = ServiceJdbcAdapter::mapRow;
+    private static final String SELECT_SERVICE = """
+            SELECT id, professional_id, client_id, status, version, created_at, updated_at,
+                destination_latitude, destination_longitude,
+                last_latitude, last_longitude, last_tracked_at
+            FROM services
+            """;
+    /** Criterio único de "servicio activo": cualquier estado no terminal. */
+    private static final String ACTIVE = "status NOT IN ('COMPLETED', 'CANCELLED')";
     private final JdbcTemplate jdbc;
 
     public ServiceJdbcAdapter(JdbcTemplate jdbc) {
@@ -45,15 +54,7 @@ public class ServiceJdbcAdapter implements ServiceRepositoryPort, TrackingReposi
 
     @Override
     public Optional<Service> findById(UUID serviceId) {
-        return jdbc.query(
-                        """
-                        SELECT id, professional_id, client_id, status, version, created_at, updated_at,
-                            destination_latitude, destination_longitude,
-                            last_latitude, last_longitude, last_tracked_at
-                        FROM services WHERE id = ?
-                        """,
-                        ROW_MAPPER,
-                        serviceId)
+        return jdbc.query(SELECT_SERVICE + "WHERE id = ?", ROW_MAPPER, serviceId)
                 .stream()
                 .findFirst();
     }
@@ -79,13 +80,26 @@ public class ServiceJdbcAdapter implements ServiceRepositoryPort, TrackingReposi
     @Override
     public boolean hasActiveService(String professionalId) {
         Integer count = jdbc.queryForObject(
-                """
-                SELECT COUNT(*) FROM services
-                WHERE professional_id = ? AND status NOT IN ('COMPLETED', 'CANCELLED')
-                """,
+                "SELECT COUNT(*) FROM services WHERE professional_id = ? AND " + ACTIVE,
                 Integer.class,
                 professionalId);
         return count != null && count > 0;
+    }
+
+    @Override
+    public List<Service> findActiveByProfessionalId(String professionalId) {
+        return jdbc.query(
+                SELECT_SERVICE + "WHERE professional_id = ? AND " + ACTIVE + " ORDER BY updated_at DESC",
+                ROW_MAPPER,
+                professionalId);
+    }
+
+    @Override
+    public List<Service> findActiveByClientId(String clientId) {
+        return jdbc.query(
+                SELECT_SERVICE + "WHERE client_id = ? AND " + ACTIVE + " ORDER BY updated_at DESC",
+                ROW_MAPPER,
+                clientId);
     }
 
     @Override
