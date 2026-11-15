@@ -32,7 +32,14 @@ public class SecurityConfig {
         return http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        // Actuator publico lo justo: salud, info y las metricas para Prometheus.
+                        // El resto de actuator queda cerrado como cualquier otro endpoint.
+                        .requestMatchers(
+                                "/actuator/health", "/actuator/health/**",
+                                "/actuator/info",
+                                "/actuator/metrics", "/actuator/metrics/**",
+                                "/actuator/prometheus")
+                        .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/professionals/me/**").hasRole("PROFESSIONAL")
                         .requestMatchers(HttpMethod.POST, "/api/promotions").hasRole("PROFESSIONAL")
                         .requestMatchers(HttpMethod.GET, "/api/promotions/mine").hasRole("PROFESSIONAL")

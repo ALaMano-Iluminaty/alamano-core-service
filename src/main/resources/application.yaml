@@ -29,7 +29,20 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    # Tags que el tablero de Grafana usa para filtrar por servicio e instancia.
+    tags:
+      application: ${spring.application.name}
+      instance: ${HOSTNAME:local}
+    distribution:
+      # Habilita el buckets de percentiles en http_server_requests_seconds, que
+      # es lo que necesita histogram_quantile(0.95, ...) del tablero tecnico.
+      percentiles-histogram:
+        http.server.requests: true
 logging:
   structured:
     format:
