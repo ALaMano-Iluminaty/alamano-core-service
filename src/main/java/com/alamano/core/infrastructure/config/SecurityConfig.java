@@ -29,7 +29,10 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http.csrf(csrf -> csrf.disable())
+        // CSRF se desactiva a proposito: la API es stateless y se autentica con JWT
+        // Bearer en cada peticion (no hay sesiones ni cookies de sesion, que es el
+        // vector que protege CSRF). Sonar S4502 lo marca por costumbre: aqui no aplica.
+        return http.csrf(csrf -> csrf.disable()) // NOSONAR S4502
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         // Actuator publico lo justo: salud, info y las metricas para Prometheus.
