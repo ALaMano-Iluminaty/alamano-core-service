@@ -15,6 +15,11 @@ import com.alamano.core.domain.promotion.PromotionNoSlotsException;
 import com.alamano.core.domain.promotion.PromotionNotFoundException;
 import com.alamano.core.domain.service.ServiceInactiveException;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -26,9 +31,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class RestExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(RestExceptionHandler.class);
+
     @ExceptionHandler(ServiceAccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     Map<String, Object> accessDenied(ServiceAccessDeniedException ex) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        log.warn("acceso_denegado usuario={} motivo=no_es_participante",
+                authentication == null ? "anonimo" : authentication.getName());
         return Map.of("error", "service_access_denied", "message", ex.getMessage());
     }
 
@@ -67,6 +77,12 @@ public class RestExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     Map<String, Object> invalidRequest(Exception ex) {
         return Map.of("error", "invalid_request", "message", ex.getMessage());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    Map<String, Object> unreadableBody(HttpMessageNotReadableException ex) {
+        return Map.of("error", "invalid_request", "message", "El cuerpo de la petición no es un JSON válido.");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

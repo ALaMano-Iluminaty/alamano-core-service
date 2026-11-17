@@ -49,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/services/*/location").hasRole("PROFESSIONAL")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(resourceServer -> resourceServer
+                        .accessDeniedHandler(new LoggingAccessDeniedHandler())
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .build();
     }
