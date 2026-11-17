@@ -7,19 +7,23 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PromotionJdbcAdapter implements PromotionRepositoryPort {
     private static final RowMapper<Promotion> ROW_MAPPER = PromotionJdbcAdapter::mapRow;
     private final JdbcTemplate jdbc;
+    private final NamedParameterJdbcTemplate named;
 
     public PromotionJdbcAdapter(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+        this.named = new NamedParameterJdbcTemplate(jdbc);
     }
 
     @Override
@@ -66,14 +70,14 @@ public class PromotionJdbcAdapter implements PromotionRepositoryPort {
         if (professionalIds.isEmpty()) {
             return List.of();
         }
-        String placeholders = professionalIds.stream().map(id -> "?").reduce((a, b) -> a + "," + b).orElse("");
-        return jdbc.query(
+        // Parametro con nombre: Spring expande la coleccion a ?,?,? sin armar el SQL con texto (Sonar S2077).
+        return named.query(
                 """
                 SELECT id, professional_id, description, total_slots, created_at
-                FROM promotions WHERE professional_id IN (%s) ORDER BY created_at DESC
-                """.formatted(placeholders),
-                ROW_MAPPER,
-                professionalIds.toArray());
+                FROM promotions WHERE professional_id IN (:ids) ORDER BY created_at DESC
+                """,
+                Map.of("ids", professionalIds),
+                ROW_MAPPER);
     }
 
     @Override
