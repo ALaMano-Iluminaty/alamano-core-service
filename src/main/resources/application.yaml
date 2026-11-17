@@ -19,6 +19,9 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 alamano:
+  nearby:
+    # HU-Q9: vigencia (segundos) de la lista de barberos cercanos guardada en Redis por celda.
+    cache-ttl-seconds: ${NEARBY_CACHE_TTL_SECONDS:10}
   tracking:
     average-speed-kmh: ${TRACKING_AVERAGE_SPEED_KMH:25}
   events:
